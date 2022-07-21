@@ -1,0 +1,8 @@
+{
+    "python.autoComplete.extraPaths": [
+        "C:\\Users\\<user_name>\\AppData\\Local\\Programs\\Python\\Python38\\python.exe"
+        ],
+        "python.analysis.extraPaths": [
+            "C:\\Users\\<user_name>\\AppData\\Local\\Programs\\Python\\Python38\\python.exe"
+        ],
+}
