@@ -43,7 +43,9 @@ class List():
         listas = requests.get(endpoint,headers=self.auth)
         return(listas.status_code)
     
-    def getEmpreendimentos(self):
+    def getEmpreendimentos(self)->list:
+        """retorna todos os empreendimentos cadastrados
+        """
         list_id = self.getListID()
         endpoint = f"https://api.clickup.com/api/v2/list/{list_id}/field"
         
