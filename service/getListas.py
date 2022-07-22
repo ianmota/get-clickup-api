@@ -13,14 +13,16 @@ class List():
         self.spaceID = space_id
         self.endpoint = endpoint = f"https://api.clickup.com/api/v2/space/{self.spaceID}/list?archived=false"
         
-    def getListsFolderless(self)->dict:
+    def getListsFolderless(self)->list:
         """retorna todas as listas no space
         """ 
         listas = requests.get(self.endpoint,headers=self.auth)
         listas_json=listas.json()
         return(listas_json["lists"])
 
-    def getListID(self):
+    def getListID(self)->int:
+        """retorna o id da lista procurada
+        """
         list = self.getListsFolderless()
         
         for i in range(len(list)):
@@ -32,7 +34,9 @@ class List():
             
         return(listID)
     
-    def getListsStatus(self):
+    def getListsStatus(self)->int:
+        """retorna o status da solicitação a api
+        """
         endpoint = f"https://api.clickup.com/api/v2/space/{self.spaceID}/list?archived=false"
         listas = requests.get(endpoint,headers=self.auth)
         return(listas.status_code)
