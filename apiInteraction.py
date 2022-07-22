@@ -1,8 +1,10 @@
+from ast import Sub
 from service.getWorkspaces import Workspace
 from service.credentialRead import credentialRead
 from service.getSpaces import Spaces
 from service.getListas import List
 from service.getTasks import Tasks
+from service.getSubtasks import Subtasks
 
 credenciais = credentialRead("credenciais.json")
 token = credenciais["token"]
@@ -22,6 +24,12 @@ list_id = lista_get.getListID()
 
 tasks_get = Tasks(header,list_id)
 status_task = tasks_get.getTasksStatus()
-task_json = tasks_get.getTasks()
+tasksID = tasks_get.getTasksID()
 
-print(task_json)
+subtasks = []
+for taskid in tasksID:
+    subtask_get = Subtasks(header,taskid)
+    status_subtask = subtask_get.getSubtasksStatus()
+    subtasks.append(subtask_get.getSubtasks()) 
+
+print(subtasks)
