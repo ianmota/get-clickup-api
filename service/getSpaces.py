@@ -13,8 +13,8 @@ class Spaces():
         self.workspaceID = workspace_id
         self.endpoint = f"https://api.clickup.com/api/v2/team/{self.workspaceID}/space?archived=false"
         
-    def getSpaces(self)->dict:
-        """retorna todos os espaços do usuário
+    def getSpaces(self)->list:
+        """retorna uma lista com todos os espaços do usuário
         """
         spaces = requests.get(self.endpoint,headers=self.auth)
         spaces_json = spaces.json()
