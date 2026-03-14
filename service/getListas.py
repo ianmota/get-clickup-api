@@ -1,17 +1,16 @@
 import requests
 
 class List():
-    def __init__(self,auth:dict,list_name:str,space_id:int) -> None:
+    def __init__(self,auth:dict,space_id:int) -> None:
         """coleta todos os dados das listas em um espaço
         Args:
             auth:{Authorization:token}
-            list_name: template
+            list_name: template (se estiver em pasta usar None)
             space_id:0848
         """
         self.auth = auth
-        self.listName = list_name.upper().replace(" ","")
         self.spaceID = space_id
-        self.endpoint = endpoint = f"https://api.clickup.com/api/v2/space/{self.spaceID}/list?archived=false"
+        self.endpoint = f"https://api.clickup.com/api/v2/space/{self.spaceID}/list?archived=false"
         
     def getListsFolderless(self)->list:
         """retorna todas as listas no space
@@ -20,20 +19,55 @@ class List():
         listas_json=listas.json()
         return(listas_json["lists"])
 
-    def getListID(self)->int:
+    def getLists(self,folderID)->list:
+        """_summary_
+
+        Args:
+            folderID (_type_): _description_
+
+        Returns:
+            list: _description_
+        """
+        endpoint=f"https://api.clickup.com/api/v2/folder/{folderID}/list"
+        query = {
+            "archived": "false"
+        }
+        listas = requests.get(endpoint,headers=self.auth,params=query)
+        
+        if(listas.status_code == 200):
+            listas_json = listas.json()
+            print("Listas carregadas!")
+        else:
+            listas_json = {}
+            print("Erro de conexão com a API")
+        
+        return(listas_json.get("lists",{}))
+
+    def getListID(self,list_name=None,folder_id=None)->int:
         """retorna o id da lista procurada
         """
-        list = self.getListsFolderless()
+        listID = []
+
+        if(list_name):
+            listName = list_name.upper().replace(" ","")
+            lists = self.getListsFolderless()
         
-        for i in range(len(list)):
-            list_generate = list[i]["name"]
-            list_name = list_generate.upper().replace(" ","")
-            if(list_name == self.listName):
-                listID = list[i]["id"]
-                break
-            else:
-                listID = 0
+            for i in range(len(lists)):
+                list_generate = lists[i]["name"]
+                list_name = list_generate.upper().replace(" ","")
+                if(list_name == listName):
+                    listID.append(lists[i]["id"])
+                    break
+                else:
+                    listID.append(0)
             
+        else:
+
+            lists = self.getLists(folder_id)
+
+            for list in lists:
+                listID.append(list["id"])
+
         return(listID)
     
     def getListsStatus(self)->int:
@@ -43,8 +77,8 @@ class List():
         listas = requests.get(endpoint,headers=self.auth)
         return(listas.status_code)
     
-    def getEmpreendimentos(self)->list:
-        """retorna todos os empreendimentos cadastrados
+    def getCustomFields(self)->list:
+        """retorna os campos personalizados da lista
         """
         list_id = self.getListID()
         endpoint = f"https://api.clickup.com/api/v2/list/{list_id}/field"
@@ -52,12 +86,6 @@ class List():
         custom_labels = requests.get(endpoint,headers=self.auth).json()
         
         fields = custom_labels["fields"]   
-        
-        for i in range(len(fields)):
-            if(fields[i]["name"] == "Empreendimento"):
-                customFields = fields[i]["type_config"]["options"]
-                break
-            else:
-                customFields = 0
-        print(customFields)
-        
+
+        return(fields)
+    

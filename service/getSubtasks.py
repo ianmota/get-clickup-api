@@ -1,4 +1,5 @@
 import requests
+# Não lembro porque criei esta classe - inoperante
 
 class Subtasks():
     def __init__(self,auth,tasks_id:str) -> None:
