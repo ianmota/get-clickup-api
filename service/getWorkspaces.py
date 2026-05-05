@@ -16,13 +16,14 @@ class Workspace():
         """Coleta uma lista de workspaces existentes
         """
         workspaces = requests.get(self.endpoint,headers=self.auth)
+        workspaces_json = {} # Inicializa para evitar NameError
         if(workspaces.status_code == 200):
             workspaces_json = workspaces.json()
             print(f"Workspace {self.spaceName} acessado!")
             
         else:
             print(f"Erro na comunicação com o workspace {self.spaceName}!")
-
+            
         return(workspaces_json.get("teams",{}))
 
     def getWorkspaceID(self)->int:

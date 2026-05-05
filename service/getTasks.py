@@ -5,11 +5,12 @@ from datetime import datetime
 class Tasks():
     def __init__(self,auth:dict,list_id:int,) -> None:
         self.auth = auth
-        self.listID = list_id
+        self.listID = list_id # Este é esperado ser uma lista de IDs de listas
 
     def getTasks(self, start_date:str=None):
-        tasks_json = []
 
+        tasks_json = []
+        
 
         if start_date:
             start_ms = int(datetime.strptime(start_date, "%d/%m/%Y").timestamp()*1000)
@@ -38,11 +39,10 @@ class Tasks():
                     tasks_data = tasks.json()
                     page_tasks = tasks_data.get("tasks", [])
 
-                    if not page_tasks:
+                    if not page_tasks: # Nenhuma tarefa restante para esta lista ou nenhuma tarefa encontrada
                         flag_search = False
-                        tasks_json.extend(page_tasks)
-                        print("Tasks coletadas normalmente")
-                    
+                        print(f"Coleta de tarefas para a lista {listID}: Concluída ou nenhuma tarefa encontrada.")
+
                     elif page >= 20:
                         limit_exceed = False
                         print("ATENÇÃO! O processo foi interrompido pelo limite de iterações.")
@@ -53,13 +53,13 @@ class Tasks():
                         time.sleep(0.1)
 
                 else:
-                    print(f"Erro na API: {tasks.status_code}")
+                    print(f"Erro na API ao coletar tarefas para a lista {listID}: {tasks.status_code}. Resposta: {tasks.text}")
                     break
 
                 if not (flag_search and limit_exceed):
                     break
-            
-        return(tasks_json)
+        
+        return tasks_json
     
     def getTasksID(self):
         tasks = self.getTasks()

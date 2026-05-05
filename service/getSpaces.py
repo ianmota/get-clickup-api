@@ -1,30 +1,42 @@
 import requests
 
 class Spaces():
+    """Coleta os dados de todos os espaços
+    Args:
+        auth (str):{Authorization:token}
+        workspace_id (int): id
+    """
     def __init__(self,auth:dict,workspace_id:int) -> None:
-        """Coleta os dados de todos os espaços
-        Args:
-            auth:{Authorization:token}
-            space_name: template
-            workspace_id: 0912
-        """
         self.auth = auth
         self.workspaceID = workspace_id
         self.endpoint = f"https://api.clickup.com/api/v2/team/{self.workspaceID}/space?archived=false"
+        self._flag_spaces = 1 # Inicializa o cache para os espaços
         
     def getSpaces(self)->list:
-        """retorna uma lista com todos os espaços do usuário
+        """Retorna uma lista com todos os espaços do usuário
         """
-        spaces = requests.get(self.endpoint,headers=self.auth)
-        if(spaces.status_code == 200):
-            spaces_json = spaces.json()
-            print("Espaço acessado com sucesso!")
+        
+        spaces_json = {} 
+        all_spaces = [] # Inicializa para evitar NameError
+        spaces_response = requests.get(self.endpoint,headers=self.auth)
+        if spaces_response.status_code == 200:
+            spaces_json = spaces_response.json()
+            all_spaces = spaces_json.get("spaces", [])
+            if all_spaces and self._flag_spaces:
+                print("Espaços acessados com sucesso:")
+                for space_item in all_spaces: # Renomeado para evitar conflito com a classe
+                    print(f"- {space_item["name"]}")
+            else:
+                print("Nenhum espaço encontrado.")
         else:
-            print("Erro na conexão com a API ao acessar os espaços")
-        return(spaces_json.get("spaces",{}))
+            print(f"Erro na conexão com a API ao acessar os espaços. Status: {spaces_response.status_code}")
+        
+        self._flag_spaces = 0
+
+        return all_spaces
 
     def getSpaceID(self,space_name)->int:
-        """retorna o id do espaço procurado
+        """Retorna o id do espaço procurado
         """
         spaceName = space_name.upper().replace(" ","")
         space = self.getSpaces()
@@ -38,26 +50,18 @@ class Spaces():
             else:
                 spaceID = 0
                 
-        return(spaceID)
-    
-    def getSpacesStatus(self)->int:
-        """retorna o status da solicitação a api
-        """
-        endpoint = f"https://api.clickup.com/api/v2/team/{self.workspaceID}/space?archived=false"
-        spaces = requests.get(endpoint,headers=self.auth)
-        return(spaces.status_code)
+        return spaceID
     
 class Folders():
     """Avaliar as pastas de um espaço
         Args:
             self.auth: autenticação
-            self.folderName: pasta procurada
             self.space: espaço de trabalho
     """
-    def __init__(self,auth:dict,folder_name:str,workspace_id:int):
+    def __init__(self,auth:dict,space_id:int): # Removido folder_name do init
         self.auth = auth
-        self.folderName = folder_name.upper().replace(" ","")
-        self.space = workspace_id
+        self.space = space_id
+        self._flag_folders = True
 
     def getFolders(self) -> list:
         """Seleciona todas as pastas do espaço
@@ -69,33 +73,40 @@ class Folders():
         query = {
             "archived": "false",
         }
+    
         folders = requests.get(endpoint,headers=self.auth, params=query)
+        folders_json = {} # Inicializa para evitar NameError
+        all_folders = [] # Inicializa para evitar NameError
 
         if(folders.status_code == 200):
             folders_json = folders.json()
-            print("Pastas acessadas!")
+            all_folders = folders_json.get("folders", [])
+            if all_folders and self._flag_folders:
+                print("Pastas acessadas com sucesso:")
+                for list_item in all_folders: 
+                    print(f"- {list_item["name"]}")
+            else:
+                print("Nenhuma pasta encontrada.")
         
         else:
-            print("Falha na conexão com a API")
-        
-        return(folders_json.get("folders",{}))
+            print(f"Falha na conexão com a API ao acessar pastas. Status: {folders.status_code}")
+
+        self._flag_folders = False
+
+        return all_folders
     
-    def getFolderId(self) -> int:
+    def getFolderId(self, folder_name: str) -> int: # Adicionado folder_name como parâmetro
         """Filtra apenas a pasta com o nome procurado
 
         Returns:
             int: id da pasta
         """
         folders = self.getFolders()
-        folder_ID = 0
+        target_folder_name_formatted = folder_name.upper().replace(" ","")
         
         for folder in folders:
-            
-            if(self.folderName == folder["name"].upper().replace(" ","")):
-                folder_ID = folder["id"]
+            if target_folder_name_formatted == folder["name"].upper().replace(" ",""):
+                return folder["id"]
+        return 0 # Retorna 0 se não encontrar
 
         
-        return(folder_ID)
-
-        
-

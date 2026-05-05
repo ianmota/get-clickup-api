@@ -1,29 +1,44 @@
 import requests
 
 class List():
+    """Coleta todos os dados das listas em um espaço
+    Args:
+        auth(str):{Authorization:token}
+        space_id(int):id
+    """
     def __init__(self,auth:dict,space_id:int) -> None:
-        """coleta todos os dados das listas em um espaço
-        Args:
-            auth:{Authorization:token}
-            list_name: template (se estiver em pasta usar None)
-            space_id:0848
-        """
         self.auth = auth
         self.spaceID = space_id
         self.endpoint = f"https://api.clickup.com/api/v2/space/{self.spaceID}/list?archived=false"
-        
+        self._flag_lists = True 
+
     def getListsFolderless(self)->list:
-        """retorna todas as listas no space
-        """ 
-        listas = requests.get(self.endpoint,headers=self.auth)
-        listas_json=listas.json()
-        return(listas_json["lists"])
+        """Retorna todas as listas no space
+        """       
+        listas_response= requests.get(self.endpoint,headers=self.auth)
+
+        listas_json = {} # Inicializa para evitar NameError
+        allLists = [] # Inicializa para evitar NameError
+
+        if(listas_response.status_code == 200):
+            listas_json = listas_response.json()
+            allLists = listas_json.get("lists", [])
+            if allLists and self._flag_lists:
+                self._flag_lists = False
+                print("Listas acessadas com sucesso:")
+                for list_item in allLists: # Renomeado para evitar conflito com a palavra-chave 'list'
+                    print(f"- {list_item["name"]}")
+            
+        else:
+            print(f"Erro de conexão com a API ao acessar listas sem pasta. Status: {listas_response.status_code}")
+
+        return(allLists)
 
     def getLists(self,folderID)->list:
-        """_summary_
+        """Retorna todas as listas em uma pasta
 
         Args:
-            folderID (_type_): _description_
+            folderID (int): id da pasta
 
         Returns:
             list: _description_
@@ -32,50 +47,55 @@ class List():
         query = {
             "archived": "false"
         }
-        listas = requests.get(endpoint,headers=self.auth,params=query)
+
+        listas_response = requests.get(endpoint,headers=self.auth,params=query)
         
-        if(listas.status_code == 200):
-            listas_json = listas.json()
-            print("Listas carregadas!")
+        listas_json = {} # Inicializa para evitar NameError
+        allLists = [] # Inicializa para evitar NameError
+        if(listas_response.status_code == 200):
+            listas_json = listas_response.json()
+            allLists = listas_json.get("lists", [])
+            if allLists and self._flag_lists:   
+                self._flag_lists = False
+                print("Listas acessadas com sucesso:")
+                for list_item in allLists: # Renomeado para evitar conflito com a palavra-chave 'list'
+                    print(f"- {list_item["name"]}")
+            
         else:
-            listas_json = {}
-            print("Erro de conexão com a API")
+            print(f"Erro de conexão com a API ao acessar listas em pasta. Status: {listas_response.status_code}")
         
-        return(listas_json.get("lists",{}))
+        return(allLists)
 
     def getListID(self,list_name=None,folder_id=None)->int:
-        """retorna o id da lista procurada
+        """Retorna o id da lista procurada
         """
         listID = []
 
         if(list_name):
-            listName = list_name.upper().replace(" ","")
+            target_list_name_formatted = list_name.upper().replace(" ","")
             lists = self.getListsFolderless()
         
-            for i in range(len(lists)):
-                list_generate = lists[i]["name"]
-                list_name = list_generate.upper().replace(" ","")
-                if(list_name == listName):
-                    listID.append(lists[i]["id"])
+            found_id = None
+            for list_item in lists:
+                current_list_name_formatted = list_item["name"].upper().replace(" ","")
+                if current_list_name_formatted == target_list_name_formatted:
+                    found_id = list_item["id"]
                     break
-                else:
-                    listID.append(0)
+            if found_id is not None:
+                listID.append(found_id)
+            else:
+                print(f"Aviso: Lista '{list_name}' não encontrada no espaço sem pasta.")
+                listID.append(0) # Retorna 0 se não encontrar
             
         else:
-
             lists = self.getLists(folder_id)
+            for list_item in lists:
+                listID.append(list_item["id"])
 
-            for list in lists:
-                listID.append(list["id"])
+        if not listID and folder_id is not None: # Se nenhuma lista foi encontrada em uma pasta específica
+            print(f"Aviso: Nenhuma lista encontrada na pasta com ID '{folder_id}'.")
 
-        return(listID)
-    
-    def getListsStatus(self)->int:
-        """retorna o status da solicitação a api
-        """
-        endpoint = f"https://api.clickup.com/api/v2/space/{self.spaceID}/list?archived=false"
-        listas = requests.get(endpoint,headers=self.auth)
-        return(listas.status_code)
+        return listID
     
     def getCustomFields(self)->list:
         """retorna os campos personalizados da lista

@@ -12,6 +12,7 @@ header = {
     "Authorization": credenciais["token"]
     }
 
+member_costs = srvc_log.jsonRead("member_costs") # Carrega os custos por membro
 caminho_excel = credenciais["path"]
 
 workspaces_get = Workspace(header,"norcore") #open workspace indicated
@@ -24,14 +25,10 @@ space_id_andamento = spaces_get.getSpaceID("andamento")
 
 space_id_planejamento = spaces_get.getSpaceID("planejamento")
 
-folders_get_b55 = Folders(header,"Planejamento projetos - B55",space_id_planejamento) #open lists of b55
-folder_id_b55 = folders_get_b55.getFolderId()
-
-folders_get_norcore = Folders(header, "Planejamento projetos - Interno", space_id_planejamento) #open norcore lists
-folder_id_norcore = folders_get_norcore.getFolderId()
-
-folders_get_estudos = Folders(header, "Estudos", space_id_planejamento) #open study lists
-folder_id_estudos = folders_get_norcore.getFolderId()
+folders_manager_planejamento = Folders(header, space_id_planejamento)
+folder_id_b55 = folders_manager_planejamento.getFolderId("Planejamento projetos - B55")
+folder_id_norcore = folders_manager_planejamento.getFolderId("Planejamento projetos - Interno")
+folder_id_estudos = folders_manager_planejamento.getFolderId("Estudos")
 
 lista_get_andamento = List(header,space_id_andamento) #get olds list ids 
 list_id_semanal = lista_get_andamento.getListID(list_name="semanal")
@@ -57,16 +54,12 @@ log_geral = {
     "last_date": tasks_get.lastSave()
 }
 
-
 srvc_log.logSave("tasks",all_tasks) #save all tasks
 srvc_log.logSave("time_entries",data_time) #save all times entries
 srvc_log.logSave("use_log",log_geral) #save informations for extraction
 
-dataExtract = dataConstructor(all_tasks)
+dataExtract = dataConstructor(all_tasks, member_costs=member_costs) # Passa os custos dos membros
 importantData = dataExtract.timeEntrieExtract(data_time)
 srvc_log.logSave("extracted_data",importantData)
 
 dataExtract.excelSave(importantData, caminho_excel)
-
-
-

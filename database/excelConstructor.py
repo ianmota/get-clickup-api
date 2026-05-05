@@ -11,8 +11,9 @@ class dataConstructor():
         data(json): dados extraídos com todas as tasks
     """
     
-    def __init__(self, data):
+    def __init__(self, data, member_costs=None):
        self.data = data
+       self.member_costs = member_costs if member_costs is not None else {}
 
     def data_taskExtract(self):
         """Seleciona apenas os parâmetros importantes de todas as tasks coletadas. A entrada de horas é captada de maneira total (não da para 
@@ -66,12 +67,13 @@ class dataConstructor():
         """
         extracted_data = []
         tasks_lookup = {}
-
+        
         for task in self.data:
             tasks_lookup[task["id"]] = {
                 "Atividade": task.get("name"),
                 "Responsável_tarefa": ", ".join([a['username'] for a in task.get('assignees', [])]),
                 "Status": task.get("status",{}).get("status"),
+                "Tempo Estimado (ms)": task.get("time_estimate", 0) # Adiciona o tempo estimado
             }
 
             for field in task.get("custom_fields",[]):
@@ -110,11 +112,16 @@ class dataConstructor():
                     "Responsável_tarefa": detalhes.get("Responsável_tarefa"),
                     "Responsável_tempo": entry.get("user",{}).get("username"),
                     "Status": detalhes.get("Status"),
-                    "Tempo (ms)": int(entry.get("duration", 0)),
+                    "Tempo (ms)": round(int(entry.get("duration", 0))/3600000,2),
+                    "Tempo Estimado (ms)": round(int(detalhes.get("Tempo Estimado (ms)", 0))/3600000,2) if isinstance(detalhes.get("Tempo Estimado (ms)", 0),(int,str)) else detalhes.get("Tempo Estimado (ms)", 0), # Adiciona o tempo estimado
+                    "Custo de Produção": (
+                        round((int(entry.get("duration",0)) / 3600000) * self.member_costs.get(entry.get("user",{}).get("username"), 0),2)
+                        if isinstance(entry.get("duration"), (int, str)) and str(entry["duration"]).isdigit() else 0
+                    ),
                     "Fase": detalhes.get("Fase"),
                     "Projetos": detalhes.get("Projetos - Norcore"),
                     "data_extraido": extraction_date,
-                    "data_alterado": datetime.fromtimestamp(int(entry["at"]) / 1000).strftime("%d/%m/%Y") if entry.get("at") else None,
+                    "data_alterado": datetime.fromtimestamp(int(entry["start"]) / 1000).strftime("%d/%m/%Y") if entry.get("start") else None,
                     "serviço": detalhes.get("Serviços")
                 })
 
@@ -127,6 +134,8 @@ class dataConstructor():
                     "Responsável_tempo": None,
                     "Status": detalhes.get("Status"),
                     "Tempo (ms)": 0,
+                    "Tempo Estimado (ms)": round(int(detalhes.get("Tempo Estimado (ms)", 0))/3600000,2) if isinstance(detalhes.get("Tempo Estimado (ms)", 0),(int,str)) else detalhes.get("Tempo Estimado (ms)", 0), # Adiciona o tempo estimado
+                    "Custo de Produção": 0, # Sem tempo gasto, custo é 0
                     "Fase": detalhes.get("Fase"),
                     "Projetos": detalhes.get("Projetos - Norcore"),
                     "data_extraido": extraction_date,
